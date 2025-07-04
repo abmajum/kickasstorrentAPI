@@ -76,3 +76,19 @@ def get_torrents(encoded_query: str, page: str = 1):
       }
   driver.quit()
   return results, len(page_urls)
+
+def get_magnet_link(page_url):
+  driver = webdriver.Chrome(options=chrome_options)
+  driver.get(page_url)
+  magnet_element = WebDriverWait(driver, 10).until(
+          EC.presence_of_element_located((By.CSS_SELECTOR, "a.kaGiantButton"))
+      )
+  magnet = magnet_element.get_attribute("href")
+
+  if 'magnet' not in magnet:
+      magnet_element = WebDriverWait(driver, 10).until(
+          EC.presence_of_element_located((By.CSS_SELECTOR, "a.siteButton.giantButton"))
+      )
+      magnet = magnet_element.get_attribute("href")
+  driver.quit()
+  return magnet
