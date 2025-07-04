@@ -4,6 +4,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import urllib.parse
+import tempfile
+import os
+import shutil
 
 app = FastAPI()
 
@@ -11,8 +14,12 @@ app = FastAPI()
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_experimental_option("detach", True)
 chrome_options.add_argument("headless")
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--disable-dev-shm-usage')
 chrome_options.add_argument("disable-gpu")
 chrome_options.add_argument("window-size=1920x1080")
+
+
 
 # Prepare search query
 url = "https://kickasstorrents.to/usearch/"
@@ -23,7 +30,9 @@ def get_torrents(encoded_query: str, page: str = 1):
       final_encoded_query = encoded_query
   else:
       final_encoded_query = f"{encoded_query}/{str(page)}"
-
+  # Safe temp user data dir
+  user_data_dir = tempfile.mkdtemp()
+  chrome_options.add_argument(f'--user-data-dir={user_data_dir}')
   # Start browser and go to the search results page
   driver = webdriver.Chrome(options=chrome_options)
   
@@ -79,6 +88,7 @@ def get_torrents(encoded_query: str, page: str = 1):
 
       }
   driver.quit()
+  shutil.rmtree(user_data_dir, ignore_errors=True)
   return results, len(page_urls)
 
 def get_magnet_link(page_url):
