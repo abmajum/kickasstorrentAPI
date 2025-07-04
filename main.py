@@ -1,7 +1,11 @@
+from fastapi import FastAPI, Query
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import urllib.parse
+
+app = FastAPI()
 
 # Setup Chrome options
 chrome_options = webdriver.ChromeOptions()
@@ -92,3 +96,21 @@ def get_magnet_link(page_url):
       magnet = magnet_element.get_attribute("href")
   driver.quit()
   return magnet
+
+
+@app.get("/get-torrents")
+def fetch_torrents(query: str = Query(..., description="Search term")):
+  encoded_query = urllib.parse.quote(query)
+  results, total_pages = get_torrents(encoded_query)
+  return {"results": results, "total_pages": total_pages}
+
+
+@app.get("/get-torrents/{page}")
+def fetch_torrents_page(page: int, query: str = Query(...)):
+  encoded_query = urllib.parse.quote(query)
+  torrents = get_torrents(encoded_query, page)
+  return {"results": torrents}
+
+@app.get("/get-magnet")
+def fetch_magnet(page_url: str = Query(..., description="Full torrent page URL")):
+  return {"magnet": get_magnet_link(page_url)}
