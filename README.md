@@ -10,5 +10,5 @@ A restapi to search torrents and get magnet links. Under the hood it is scraping
   source .venv/bin/activate
   ```
 - Install dependencies ```pip3 install -r requirements.txt```
-- run the api for dev env use ```--reload --log-level debug```
-  ```uvicorn main:app --port 3001 --host 0.0.0.0```
+- run the api for dev env use these flags ```--reload --log-level debug```
+- for prod env ```uvicorn main:app --port 3000 --host 0.0.0.0```
