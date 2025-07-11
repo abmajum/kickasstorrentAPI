@@ -1,9 +1,8 @@
 FROM python:3.12-slim
 
 # Set environment variables early
-ENV APP_HOME /app \
-    PORT 5000 \
-    DEBIAN_FRONTEND=noninteractive
+ENV APP_HOME=/app \
+    PORT=5000
 
 WORKDIR ${APP_HOME}
 
