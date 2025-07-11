@@ -7,16 +7,23 @@ import urllib.parse
 import tempfile
 import os
 import shutil
+import random
+
+# List of user-agent strings to use
+user_agents = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"
+]
 
 app = FastAPI()
 
 # Setup Chrome options
 chrome_options = webdriver.ChromeOptions()
-chrome_options.add_experimental_option("detach", True)
-chrome_options.add_argument("headless")
+chrome_options.add_argument("--headless=new")
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
-chrome_options.add_argument("disable-gpu")
+chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("window-size=1920x1080")
 
 
@@ -33,6 +40,7 @@ def get_torrents(encoded_query: str, page: str = 1):
   # Safe temp user data dir
   user_data_dir = tempfile.mkdtemp()
   chrome_options.add_argument(f'--user-data-dir={user_data_dir}')
+  chrome_options.add_argument(f"user-agent={random.choice(user_agents)}")
   # Start browser and go to the search results page
   driver = webdriver.Chrome(options=chrome_options)
   
@@ -92,6 +100,10 @@ def get_torrents(encoded_query: str, page: str = 1):
   return results, len(page_urls)
 
 def get_magnet_link(page_url):
+  # Safe temp user data dir
+  user_data_dir = tempfile.mkdtemp()
+  chrome_options.add_argument(f'--user-data-dir={user_data_dir}')
+  chrome_options.add_argument(f"user-agent={random.choice(user_agents)}")
   driver = webdriver.Chrome(options=chrome_options)
   driver.get(page_url)
   magnet_element = WebDriverWait(driver, 10).until(
@@ -105,6 +117,7 @@ def get_magnet_link(page_url):
       )
       magnet = magnet_element.get_attribute("href")
   driver.quit()
+  shutil.rmtree(user_data_dir, ignore_errors=True)
   return magnet
 
 
