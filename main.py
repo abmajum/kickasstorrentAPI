@@ -16,7 +16,29 @@ user_agents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"
 ]
 
-app = FastAPI()
+app = FastAPI(
+    title="TorrentAPI",
+    description='''
+    🔍 **TorrentAPI** allows you to search and retrieve torrent data effortlessly.
+
+    ### Features:
+    - 🔎 **Search** for torrents by keyword.
+    - 📄 **Navigate** through paginated results.
+    - 🔗 **Get magnet links** for downloading.
+
+    **Currently supported provider:**
+    - 🧲 KickassTorrents
+
+    ---
+    👉 **Visit `/docs` to explore and try the API interactively.**
+    ''',
+    summary="Search torrents and retrieve magnet links with ease.",
+    version="0.0.1",
+    license_info={
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },
+)
 
 # Setup Chrome options
 chrome_options = webdriver.ChromeOptions()
