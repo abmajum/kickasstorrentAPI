@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Query
+from fastapi.responses import RedirectResponse
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -142,6 +143,9 @@ def get_magnet_link(page_url):
   shutil.rmtree(user_data_dir, ignore_errors=True)
   return magnet
 
+@app.get("/", include_in_schema=False)
+async def docs_redirect():
+    return RedirectResponse(url='/docs')
 
 @app.get("/get-torrents")
 def fetch_torrents(query: str = Query(..., description="Search term")):
