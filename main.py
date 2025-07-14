@@ -11,6 +11,7 @@ import os
 import shutil
 import random
 from yts import get_yts_torrents
+from apibay import get_piratebay_torrents
 
 # List of user-agent strings to use
 user_agents = [
@@ -163,6 +164,10 @@ def fetch_torrents(providers: Providers, page: int = 1, query: str = Query(..., 
   elif providers == providers.yts:
      encoded_query = urllib.parse.quote(query)
      results, total_pages = get_yts_torrents(encoded_query, page)
+     return {"total_pages": total_pages, "current_page": page, "results": results}
+  elif providers == providers.thepiratebay:
+     encoded_query = urllib.parse.quote(query)
+     results, total_pages = get_piratebay_torrents(encoded_query, page)
      return {"total_pages": total_pages, "current_page": page, "results": results}
   else:
      return{"total_pages": None, "results": None, "message": "No correct provider is chosen"}
