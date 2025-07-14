@@ -99,4 +99,6 @@ def get_kickass_torrents(encoded_query: str, page: int = 1):
 
     total_pages = max(page_numbers) if page_numbers else 1
 
-    return results, total_pages
+    sorted_data = sorted(results, key=lambda x: int(x["seeds"]), reverse=True)
+
+    return sorted_data, total_pages

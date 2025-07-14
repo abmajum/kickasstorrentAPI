@@ -1,4 +1,4 @@
-selenium==4.33.0
 fastapi==0.115.14
 uvicorn==0.35.0
 requests==2.32.4
+beautifulsoup4==4.13.4
