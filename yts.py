@@ -13,7 +13,7 @@ trackers = [
 "udp://tracker.internetwarriors.net:1337",
 ]
 separator="&tr="
-all_trackers=print(separator.join(trackers))
+all_trackers=separator.join(trackers)
 
 def get_yts_torrents(query_term: str, page: int):
     results = []
