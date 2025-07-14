@@ -1,5 +1,6 @@
 import requests
 import math
+import datetime
 
 
 trackers = [
@@ -29,6 +30,7 @@ def get_piratebay_torrents(query_term: str, page: int):
             "uploader": each_item['username'],
             "seeds": each_item['seeders'],
             "size": each_item['size'],
+            "date": f"datetime.datetime.fromtimestamp(int({each_item['added']})).strftime('%Y-%m-%d %H:%M:%S')",
             "magnet": f"magnet:?xt=urn:btih:{each_item['info_hash']}&dn={each_item['name']}&tr={all_trackers}",
         }
         results.append(result)
