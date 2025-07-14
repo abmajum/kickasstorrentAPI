@@ -1,4 +1,4 @@
-import requests
+import cloudscraper
 import random
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -13,7 +13,7 @@ user_agents = [
 BASE_URL="https://kickasstorrents.to"
 base_url = "https://kickasstorrents.to/usearch/"
 headers = {"User-Agent": random.choice(user_agents)}
-
+scraper = cloudscraper.create_scraper() 
 
 # KickassTorrents search base URL
 base_url = "https://kickasstorrents.to/usearch/"
@@ -26,8 +26,14 @@ def get_kickass_torrents(encoded_query: str, page: int = 1):
 
     # Step 1: Fetch raw HTML using requests
     search_url = f"{base_url}{final_encoded_query}/"
-    headers = {"User-Agent": random.choice(user_agents)}
-    response = requests.get(search_url, headers=headers)
+    headers = {"User-Agent": random.choice(user_agents),
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp"}
+    response = scraper.get(search_url, headers=headers)
+    if response.status_code != 200:
+        print("Request failed:", response.status_code)
+        print("Response body:\n", response.text[:1000])  # preview only
+        
     html_content = response.text
 
     soup = BeautifulSoup(html_content, "html.parser")
@@ -61,7 +67,7 @@ def get_kickass_torrents(encoded_query: str, page: int = 1):
             magnet = "N/A"
             if page_url != "N/A":
                 try:
-                    detail_response = requests.get(page_url, headers={"User-Agent": random.choice(user_agents)})
+                    detail_response = scraper.get(page_url, headers={"User-Agent": random.choice(user_agents)})
                     detail_soup = BeautifulSoup(detail_response.text, "html.parser")
 
                     # Try primary selector
