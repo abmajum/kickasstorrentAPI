@@ -20,7 +20,7 @@ def get_yts_torrents(query_term: str, page: int):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36'}
     url = f"https://yts.mx/api/v2/list_movies.json?query_term={query_term}&sort_by=seeds&page={page}"
     response = requests.get(url,headers)
-    for movie in response['data']['movies']:
+    for movie in response.json()['data']['movies']:
         for torrent in movie['torrents']:
             result={
                 "slug": movie['slug'],
@@ -31,8 +31,8 @@ def get_yts_torrents(query_term: str, page: int):
                 "magnet": f"magnet:?xt=urn:btih:{torrent['hash']}&dn={movie['slug']}-{torrent['quality']}&tr={all_trackers}",
             }
             results.append(result)
-    if response['data']['movie_count'] > 20 :
-        total_pages = math.ceil(response['data']['movie_count'] / 20)
+    if response.json()['data']['movie_count'] > 20 :
+        total_pages = math.ceil(response.json()['data']['movie_count'] / 20)
     else:
         total_pages = 1
     return results, total_pages
