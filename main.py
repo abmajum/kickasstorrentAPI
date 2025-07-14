@@ -1,3 +1,4 @@
+from enum import Enum
 from fastapi import FastAPI, Query
 from fastapi.responses import RedirectResponse
 from selenium import webdriver
@@ -9,6 +10,7 @@ import tempfile
 import os
 import shutil
 import random
+from yts import get_yts_torrents
 
 # List of user-agent strings to use
 user_agents = [
@@ -16,6 +18,11 @@ user_agents = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"
 ]
+
+class Providers(str, Enum):
+    kickasstorrent = "kickasstorrent"
+    yts = "yts"
+    thepiratebay = "thepiratebay"
 
 app = FastAPI(
     title="TorrentAPI",
@@ -147,18 +154,24 @@ def get_magnet_link(page_url):
 async def docs_redirect():
     return RedirectResponse(url='/docs')
 
-@app.get("/get-torrents")
-def fetch_torrents(query: str = Query(..., description="Search term")):
-  encoded_query = urllib.parse.quote(query)
-  results, total_pages = get_torrents(encoded_query)
-  return {"results": results, "total_pages": total_pages}
+@app.get("/get-torrents/{providers}")
+def fetch_torrents(providers: Providers, page: int = 1, query: str = Query(..., description="Search term")):
+  if providers == providers.kickasstorrent:
+    encoded_query = urllib.parse.quote(query)
+    results, total_pages = get_torrents(encoded_query, page)
+    return {"total_pages": total_pages, "current_page": page, "results": results}
+  elif providers == providers.yts:
+     encoded_query = urllib.parse.quote(query)
+     results, total_pages = get_yts_torrents(encoded_query, page)
+     return {"total_pages": total_pages, "current_page": page, "results": results}
+  else:
+     return{"total_pages": None, "results": None, "message": "No correct provider is chosen"}
 
-
-@app.get("/get-torrents/{page}")
-def fetch_torrents_page(page: int, query: str = Query(...)):
-  encoded_query = urllib.parse.quote(query)
-  torrents = get_torrents(encoded_query, page)
-  return {"results": torrents}
+# @app.get("/get-torrents/{page}")
+# def fetch_torrents_page(page: int, query: str = Query(...)):
+#   encoded_query = urllib.parse.quote(query)
+#   torrents = get_torrents(encoded_query, page)
+#   return {"results": torrents}
 
 @app.get("/get-magnet")
 def fetch_magnet(page_url: str = Query(..., description="Full torrent page URL")):
