@@ -1,12 +1,7 @@
 import requests
-import base64
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import tempfile
-import shutil
 import random
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
 # List of user-agent strings to use
 user_agents = [
@@ -15,13 +10,10 @@ user_agents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"
 ]
 
-# Chrome options
-chrome_options = webdriver.ChromeOptions()
-chrome_options.add_argument("--headless=new")
-chrome_options.add_argument('--no-sandbox')
-chrome_options.add_argument('--disable-dev-shm-usage')
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("window-size=1920x1080")
+BASE_URL="https://kickasstorrents.to"
+base_url = "https://kickasstorrents.to/usearch/"
+headers = {"User-Agent": random.choice(user_agents)}
+
 
 # KickassTorrents search base URL
 base_url = "https://kickasstorrents.to/usearch/"
@@ -32,102 +24,79 @@ def get_kickass_torrents(encoded_query: str, page: int = 1):
     else:
         final_encoded_query = f"{encoded_query}/{page}"
 
-    # Create a temporary user data dir and attach a random user-agent
-    user_data_dir = tempfile.mkdtemp()
-    chrome_options.add_argument(f'--user-data-dir={user_data_dir}')
-    chrome_options.add_argument(f"user-agent={random.choice(user_agents)}")
-
     # Step 1: Fetch raw HTML using requests
     search_url = f"{base_url}{final_encoded_query}/"
     headers = {"User-Agent": random.choice(user_agents)}
     response = requests.get(search_url, headers=headers)
     html_content = response.text
 
-    # Step 2: Encode HTML and load into Selenium using data URL
-    encoded_html = base64.b64encode(html_content.encode('utf-8')).decode('utf-8')
-    data_url = f"data:text/html;base64,{encoded_html}"
+    soup = BeautifulSoup(html_content, "html.parser")
 
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get(data_url)
-
-    # Wait until search results load
-    wait = WebDriverWait(driver, 10)
-    wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "cellMainLink")))
-
-    # Get pagination links
-    pagination_links = driver.find_elements(By.CSS_SELECTOR, "a.turnoverButton")
-    page_urls = set()
-    for link in pagination_links:
-        href = link.get_attribute("href")
-        if href:
-            page_urls.add(href.strip())
-
-    # Extract search result info
-    links = driver.find_elements(By.CLASS_NAME, "cellMainLink")
-    sizes = driver.find_elements(By.CSS_SELECTOR, "td.nobr.center")
-    uploaders = driver.find_elements(By.CSS_SELECTOR, "div.mainpart .plain")
-    ages = driver.find_elements(By.CSS_SELECTOR, "td.center[title]")
-    seeds = driver.find_elements(By.CSS_SELECTOR, "td.green.center")
-
-    list_of_uploader = []
-    for uploader in uploaders:
-        uploader_name = uploader.text.strip()
-        if 'results' not in uploader_name:
-            list_of_uploader.append(uploader_name)
-    list_of_uploader = [name.strip() for name in list_of_uploader if name.strip()]
-
-    results = {}
-    for idx, (link, size, uploader, age, seed) in enumerate(
-        zip(links, sizes, list_of_uploader, ages, seeds), start=1
-    ):
-        title = link.text.strip()
-        page_url = link.get_attribute("href")
-        size_text = size.text.strip()
-        age_text = age.text.strip()
-        seed_text = seed.text.strip()
-
-        results[idx] = {
-            "title": title,
-            "page_url": page_url,
-            "size": size_text,
-            "uploader": uploader,
-            "age": age_text,
-            "seed": seed_text
-        }
-
-    # Now fetch magnet links
-    # Now fetch magnet links using requests + Selenium (data URL)
-    for idx, result in results.items():
+    results = []
+    # Find all rows that contain torrent entries
+    for row in soup.select("table.data.frontPageWidget > tbody > tr")[1:]:  # skip header row
         try:
-            # Step 1: Get the HTML of the detail page using requests
-            headers = {"User-Agent": random.choice(user_agents)}
-            detail_response = requests.get(f"https://kickasstorrents.to{result["page_url"]}", headers=headers)
-            detail_html = detail_response.text
+            # Title
+            title_elem = row.select_one("a.cellMainLink")
+            title = title_elem.get_text(strip=True) if title_elem else "N/A"
+            page_url = urljoin(BASE_URL, title_elem['href']) if title_elem and 'href' in title_elem.attrs else "N/A"
 
-            # Step 2: Encode HTML as base64 and pass to Selenium
-            encoded_detail_html = base64.b64encode(detail_html.encode("utf-8")).decode("utf-8")
-            data_url = f"data:text/html;base64,{encoded_detail_html}"
+            # Size
+            size_elem = row.select_one("td.nobr.center")
+            size = size_elem.get_text(strip=True) if size_elem else "N/A"
 
-            driver.get(data_url)
+            # Uploader
+            uploader_elem = row.select_one("a.plain[href^='/user/']")
+            uploader = uploader_elem.get_text(strip=True) if uploader_elem else "N/A"
 
-            # Step 3: Try locating the magnet button(s)
-            try:
-                magnet_element = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "a.kaGiantButton"))
-                )
-            except:
-                magnet_element = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "a.siteButton.giantButton"))
-                )
+            # Age (tooltip)
+            age_elem = row.select_one("td[title]")
+            age = age_elem['title'].replace('<br/>', ' ') if age_elem and 'title' in age_elem.attrs else "N/A"
 
-            magnet = magnet_element.get_attribute("href")
-
-        except Exception as e:
-            print(f"Error getting magnet for {result['title']}: {e}")
+            # Seeds
+            seed_elem = row.select_one("td.green.center")
+            seeds = seed_elem.get_text(strip=True) if seed_elem else "0"
+            # Fetch magnet link from detailed page
+            # Fetch magnet link from detailed page
             magnet = "N/A"
+            if page_url != "N/A":
+                try:
+                    detail_response = requests.get(page_url, headers={"User-Agent": random.choice(user_agents)})
+                    detail_soup = BeautifulSoup(detail_response.text, "html.parser")
 
-        result["magnet"] = magnet
+                    # Try primary selector
+                    magnet_elem = detail_soup.select_one("a.kaGiantButton[href^='magnet:']")
+                    if magnet_elem and magnet_elem.has_attr("href"):
+                        magnet = magnet_elem["href"]
+                    else:
+                        # Try fallback selector
+                        magnet_elem = detail_soup.select_one("a.siteButton.giantButton[href^='magnet:']")
+                        if magnet_elem and magnet_elem.has_attr("href"):
+                            magnet = magnet_elem["href"]
 
-    driver.quit()
-    shutil.rmtree(user_data_dir, ignore_errors=True)
-    return results, len(page_urls)
+                except Exception as e:
+                    print(f"Error fetching magnet from {page_url}:", e)
+            results.append({
+                "title": title,
+                "page_url": page_url,
+                "size": size,
+                "uploader": uploader,
+                "age": age,
+                "seeds": seeds,
+                "magnet": magnet
+            })
+        except Exception as e:
+            print("Error parsing row:", e)
+
+    pagination = soup.select("div.pages.botmarg5px.floatright a.turnoverButton")
+
+    # Extract numeric page numbers
+    page_numbers = []
+    for link in pagination:
+        text = link.get_text(strip=True)
+        if text.isdigit():
+            page_numbers.append(int(text))
+
+    total_pages = max(page_numbers) if page_numbers else 1
+
+    return results, total_pages
