@@ -11,6 +11,8 @@ trackers = [
 "udp://tracker.leechers-paradise.org:6969",
 "udp://p4p.arenabg.ch:1337",
 "udp://tracker.internetwarriors.net:1337",
+"udp://open.demonii.com:1337/announce",
+"udp://p4p.arenabg.com:1337"
 ]
 separator="&tr="
 all_trackers=separator.join(trackers)
