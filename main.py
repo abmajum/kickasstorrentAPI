@@ -24,6 +24,8 @@ app = FastAPI(
 
     **Currently supported provider:**
     - 🧲 KickassTorrents
+    - 🧲 YTS
+    - 🧲 ThePirateBay
 
     ---
     👉 **Visit `/docs` to explore and try the API interactively.**
