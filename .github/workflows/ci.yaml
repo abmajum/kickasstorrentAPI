@@ -45,9 +45,11 @@ jobs:
           if [ ${{ github.ref }} == 'refs/heads/master' ]; then
             echo "This is a master branch"
             echo "deploy_url=${{ secrets.RENDER_DEPLOY_HOOK_URL }}" >> "$GITHUB_ENV"
+            export deploy_url=${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           else
             echo "This is a feature branch"
             echo "deploy_url=${{ secrets.RENDER_DEPLOY_HOOK_DEV_URL }}" >> "$GITHUB_ENV"
+            export deploy_url=${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           fi
 
-          curl ${{ env.deploy_url }}
+          curl "$deploy_url"
