@@ -50,4 +50,4 @@ jobs:
             echo "deploy_url=${{ secrets.RENDER_DEPLOY_HOOK_DEV_URL }}" >> "$GITHUB_ENV"
           fi
 
-          curl "$deploy_url"
+          curl ${{ env.deploy_url }}
