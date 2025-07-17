@@ -41,8 +41,13 @@ jobs:
           tags: abhiaws/torrentapi:$TAG
 
       - name: Deploy
-        if: github.ref == 'refs/heads/master'
-        env:
-          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
+          if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+            echo "This is a master branch"
+            echo "deploy_url=${{ secrets.RENDER_DEPLOY_HOOK_URL }}" >> "$GITHUB_ENV"
+          else
+            echo "This is a feature branch"
+            echo "deploy_url=${{ secrets.RENDER_DEPLOY_HOOK_DEV_URL }}" >> "$GITHUB_ENV"
+          fi
+
           curl "$deploy_url"
