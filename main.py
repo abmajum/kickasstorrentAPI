@@ -5,12 +5,13 @@ from fastapi.responses import RedirectResponse
 from providers.yts import get_yts_torrents
 from providers.apibay import get_piratebay_torrents
 from providers.kickasstorrents import get_kickass_torrents
-
+from providers.eztv import get_eztv_torrents
 
 class Providers(str, Enum):
     kickasstorrent = "kickasstorrent"
     yts = "yts"
     thepiratebay = "thepiratebay"
+    eztv = "eztv"
 
 app = FastAPI(
     title="TorrentAPI",
@@ -26,6 +27,7 @@ app = FastAPI(
     - 🧲 KickassTorrents
     - 🧲 YTS
     - 🧲 ThePirateBay
+    - 🧲 EZTV
 
     ---
     👉 **Visit `/docs` to explore and try the API interactively.**
@@ -52,6 +54,8 @@ def fetch_torrents(providers: Providers, page: int = 1, query: str = Query(..., 
      results, total_pages = get_yts_torrents(encoded_query, page)
   elif providers == providers.thepiratebay:
      results, total_pages = get_piratebay_torrents(encoded_query, page)
+  elif providers == providers.eztv:
+     results, total_pages = get_eztv_torrents(encoded_query, page)
   else:
      return{"total_pages": None, "results": None, "message": "No correct provider is chosen"}
   return {"total_pages": total_pages, "current_page": page, "results": results}
