@@ -44,12 +44,12 @@ def get_piratebay_torrents(query_term: str, page: int):
     response = requests.get(url,headers)
     for each_item in response.json():
         result={
-            "name": each_item['name'],
-            "hash": each_item['info_hash'],
-            "uploader": each_item['username'],
-            "seeds": each_item['seeders'],
+            "title": each_item['name'],
+            "hash": each_item['info_hash'],            
             "size": humanbytes(each_item['size']),
-            "date": datetime.datetime.fromtimestamp(int(f"{each_item['added']}")).strftime('%Y-%m-%d %H:%M:%S'),
+            "uploader": each_item['username'],
+            "age": datetime.datetime.fromtimestamp(int(f"{each_item['added']}")).strftime('%Y-%m-%d %H:%M:%S'),
+            "seeds": each_item['seeders'],
             "magnet": f"magnet:?xt=urn:btih:{each_item['info_hash']}&dn={each_item['name']}&tr={all_trackers}",
         }
         results.append(result)

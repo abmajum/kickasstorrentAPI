@@ -39,14 +39,15 @@ def get_eztv_torrents(query_term: str, page: int):
             seeds = int(seed_text) if seed_text.isdigit() else 0
             result = {
                 "title": title,
-                "magnet": magnet,
+                "page_url": "NA",
                 "size": size,
+                "uploader": "eztv",
                 "age": age,
-                "seeds": seeds
+                "seeds": seeds,
+                "magnet": magnet,
             }
             results.append(result)
 
     sorted_data = sorted(results, key=lambda x: int(x["seeds"]), reverse=True)
     total_pages = 1
     return sorted_data, total_pages
-  

@@ -2,6 +2,8 @@ import urllib.parse
 from enum import Enum
 from fastapi import FastAPI, Query
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+
 from providers.yts import get_yts_torrents
 from providers.apibay import get_piratebay_torrents
 from providers.kickasstorrents import get_kickass_torrents
@@ -40,6 +42,13 @@ app = FastAPI(
     },
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],           # Allow all origins
+    allow_credentials=False,      # Must be False when using "*"
+    allow_methods=["*"],          # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],          # Allow all headers
+)
 
 @app.get("/", include_in_schema=False)
 async def docs_redirect():

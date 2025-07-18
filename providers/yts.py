@@ -25,11 +25,12 @@ def get_yts_torrents(query_term: str, page: int):
     for movie in response.json()['data']['movies']:
         for torrent in movie['torrents']:
             result={
-                "slug": movie['slug'],
+                "title": f"{movie['slug']}-{torrent['quality']}-{torrent['type']}-{torrent['video_codec']}",
                 "hash": torrent['hash'],
-                "quality": f"{torrent['quality']}-{torrent['type']}-{torrent['video_codec']}",
-                "seeds": torrent['seeds'],
                 "size": torrent['size'],
+                "uploader": "yts.mx",
+                "age": torrent['date_uploaded'],
+                "seeds": torrent['seeds'],
                 "magnet": f"magnet:?xt=urn:btih:{torrent['hash']}&dn={movie['slug']}-{torrent['quality']}&tr={all_trackers}",
             }
             results.append(result)
