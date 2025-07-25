@@ -1,8 +1,10 @@
 import urllib.parse
 from enum import Enum
-from fastapi import FastAPI, Query
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from providers.yts import get_yts_torrents
 from providers.apibay import get_piratebay_torrents
@@ -41,6 +43,10 @@ app = FastAPI(
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
 )
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,9 +56,14 @@ app.add_middleware(
     allow_headers=["*"],          # Allow all headers
 )
 
-@app.get("/", include_in_schema=False)
-async def docs_redirect():
-    return RedirectResponse(url='/docs')
+# @app.get("/", include_in_schema=False)
+# async def docs_redirect():
+#     return RedirectResponse(url='/docs')
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "message": "kickasstorrents, yts, piratbay, eztv"})
+
+
 
 @app.get("/get-torrents/{providers}")
 def fetch_torrents(providers: Providers, page: int = 1, query: str = Query(..., description="Search term")):
