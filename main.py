@@ -34,7 +34,7 @@ async def check_site_status():
 async def lifespan(app: FastAPI):
     scheduler = AsyncIOScheduler()
     # repeat task every 10 seconds
-    scheduler.add_job(func=check_site_status, trigger='interval', seconds=30)
+    scheduler.add_job(func=check_site_status, trigger='interval', seconds=300)
     scheduler.start()
     yield
 
