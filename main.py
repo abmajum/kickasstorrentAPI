@@ -6,10 +6,6 @@ from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from random import randint
-from apscheduler.triggers.cron import CronTrigger
-from contextlib import asynccontextmanager
 
 from providers.yts import get_yts_torrents
 from providers.apibay import get_piratebay_torrents
@@ -21,22 +17,7 @@ class Providers(str, Enum):
     yts = "yts"
     thepiratebay = "thepiratebay"
     eztv = "eztv"
-API_BASEURL = "https://scrapetorrents-dev.onrender.com"
 
-async def check_site_status():
-    response = requests.get(API_BASEURL)
-    if response.status_code != 200:
-        print(f"API is not running, status_code: {response.status_code}")
-    else:
-       print(f"API is running, status_code: {response.status_code}")
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    scheduler = AsyncIOScheduler()
-    # repeat task every 10 seconds
-    scheduler.add_job(func=check_site_status, trigger='interval', seconds=300)
-    scheduler.start()
-    yield
 
 app = FastAPI(
     title="TorrentAPI",
@@ -62,8 +43,7 @@ app = FastAPI(
     license_info={
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
-    },
-    lifespan=lifespan
+    }
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -78,13 +58,14 @@ app.add_middleware(
     allow_headers=["*"],          # Allow all headers
 )
 
-# @app.get("/", include_in_schema=False)
-# async def docs_redirect():
-#     return RedirectResponse(url='/docs')
-@app.get("/", response_class=HTMLResponse)
+
+@app.get("/", response_class=HTMLResponse,  include_in_schema=False)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "message": "kickasstorrents, yts, piratbay, eztv"})
 
+@app.get("/get-torrents/healthz")
+async def get_api_health_status():
+    return {"status": "Running"}
 
 
 @app.get("/get-torrents/{providers}")
