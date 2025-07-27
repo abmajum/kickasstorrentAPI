@@ -18,6 +18,10 @@ class Providers(str, Enum):
     thepiratebay = "thepiratebay"
     eztv = "eztv"
 
+    @classmethod
+    def list_of_providers(cls):
+        return [provider.value for provider in cls]
+
 
 app = FastAPI(
     title="TorrentAPI",
@@ -61,7 +65,7 @@ app.add_middleware(
 
 @app.get("/", response_class=HTMLResponse,  include_in_schema=False)
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "message": "kickasstorrents, yts, piratbay, eztv"})
+    return templates.TemplateResponse("index.html", {"request": request, "items": Providers.list_of_providers()})
 
 @app.get("/get-torrents/healthz")
 async def get_api_health_status():

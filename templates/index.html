@@ -6,7 +6,68 @@
     <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
 </head>
 <body>
-      <h1>Providers</h1>
-    <h1>{{ message }}</h1>
+      <h1> 🔍 TorrentScraper</h1>
+      <p>Search and discover torrents from multiple providers. Find what you're looking for with our fast and easy-to-use interface. </p>
+
+        <form id="torrent-form" method="get" action="/get-torrents/provider">
+            <label for="providers">Choose a torrent Provider:</label>
+            <select id="providers" name="providers" size="4">
+                {% for item in items %}
+                <option>{{ item }}</option>
+                {% endfor %}
+            </select><br><br>
+            <label for="query"> Search Query ?? </label>
+            <input type="text" id="query" name="query"> <br>
+            <input type="submit" value=" 🔍 Search Torrents ">
+        </form>
+        <div id="results"></div>
+        <!-- <script>
+            document.getElementById('torrent-form').addEventListener('submit', function (e) {
+                const provider = document.getElementById('providers').value;
+                this.action = `/get-torrents/${provider}`;
+            });
+        </script> -->
+        
+        <script>
+            document.getElementById('torrent-form').addEventListener('submit', async function (e) {
+                e.preventDefault(); // Stop form from submitting normally
+
+                const provider = document.getElementById('providers').value;
+                const query = document.getElementById('query').value;
+                const resultsContainer = document.getElementById('results');
+                resultsContainer.innerHTML = "<p>Loading...</p>";
+
+                try {
+                    const response = await fetch(`/get-torrents/${provider}?query=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+
+                    if (!data.results || data.results.length === 0) {
+                        resultsContainer.innerHTML = "<p>No results found.</p>";
+                        return;
+                    }
+
+                    // Build HTML for the results
+                    let html = "<table border='1'><tr><th>📕 Title</th><th>🖴 Size</th><th>👤 Uploader</th><th>📅 Age</th><th>🌱 Seeds</th><th>🧲 Magnet</th></tr>";
+                    data.results.forEach(item => {
+                        html += `
+                            <tr>
+                                <td>${item.title}</td>
+                                <td>${item.size}</td>
+                                <td>${item.uploader}</td>
+                                <td>${item.age}</td>
+                                <td>${item.seeds}</td>
+                                <td><a href="${item.magnet}" target="_blank">Magnet</a></td>
+                            </tr>`;
+                    });
+                    html += "</table>";
+                    resultsContainer.innerHTML = html;
+
+                } catch (error) {
+                    resultsContainer.innerHTML = "<p>Error fetching data. Check console.</p>";
+                    console.error("Fetch error:", error);
+                }
+            });
+        </script>
+
 </body>
 </html>
