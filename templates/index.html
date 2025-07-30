@@ -173,6 +173,7 @@
 
             const form = document.getElementById('torrent-form');
             const resultsContainer = document.getElementById('results');
+            const maxPagesToShow = 10;
 
             async function fetchResults(provider, query, page) {
                 resultsContainer.innerHTML = "<p class='text-gray-400'>Loading...</p>";
@@ -217,14 +218,24 @@
 
                     // Add pagination buttons
                     html += `
-                        <div class="flex justify-center space-x-4">
-                            <button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50" 
+                        <div class="flex justify-center items-center space-x-2 mt-6 text-sm">
+                            <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
                                     ${currentPage === 1 ? 'disabled' : ''}
                                     onclick="changePage(-1)">
                                 ⬅️ Previous
-                            </button>
-                            <span class="px-4 py-2 text-gray-400">Page ${currentPage}</span>
-                            <button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded"
+                            </button>`;
+
+                    for (let i = 1; i <= maxPagesToShow; i++) {
+                        html += `
+                            <button class="px-3 py-1 rounded ${currentPage === i ? 'bg-green-600 text-white font-bold' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'}"
+                                    onclick="goToPage(${i})">
+                                ${i}
+                            </button>`;
+                    }
+
+                    html += `
+                            <span class="text-gray-500 px-2">...</span>
+                            <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded"
                                     onclick="changePage(1)">
                                 Next ➡️
                             </button>
@@ -247,8 +258,8 @@
             });
 
             // Expose globally so the buttons can use it
-            window.changePage = function (delta) {
-                currentPage += delta;
+            window.goToPage = function (page) {
+                currentPage = page;
                 const provider = document.querySelector('[name="providers"]').value;
                 const query = document.getElementById('query').value;
                 fetchResults(provider, query, currentPage);
