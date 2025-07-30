@@ -216,30 +216,53 @@
 
                     html += `</tbody></table></div>`;
 
-                    // Add pagination buttons
-                    html += `
-                        <div class="flex justify-center items-center space-x-2 mt-6 text-sm">
-                            <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
-                                    ${currentPage === 1 ? 'disabled' : ''}
-                                    onclick="changePage(-1)">
-                                ⬅️ Previous
-                            </button>`;
+                    const totalPages = data.total_pages;
+                    const current = data.current_page;
 
-                    for (let i = 1; i <= maxPagesToShow; i++) {
+                    // Add pagination buttons
+                    html += `<div class="flex justify-center items-center flex-wrap gap-1 mt-6 text-sm">`;
+
+                    // Previous button
+                    html += `
+                        <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+                                ${current === 1 ? 'disabled' : ''}
+                                onclick="goToPage(${current - 1})">
+                            ⬅️ Previous
+                        </button>`;
+
+                    // Page numbers
+                    const maxVisiblePages = 10;
+                    let startPage = Math.max(1, current - Math.floor(maxVisiblePages / 2));
+                    let endPage = startPage + maxVisiblePages - 1;
+
+                    if (endPage > totalPages) {
+                        endPage = totalPages;
+                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
                         html += `
-                            <button class="px-3 py-1 rounded ${currentPage === i ? 'bg-green-600 text-white font-bold' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'}"
+                            <button class="px-3 py-1 rounded ${i === current ? 'bg-green-600 text-white font-bold' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'}"
                                     onclick="goToPage(${i})">
                                 ${i}
                             </button>`;
                     }
 
+                    // Ellipsis if not on last page
+                    if (endPage < totalPages) {
+                        html += `<span class="text-gray-500 px-2">...</span>`;
+                    }
+
+                    // Next button
                     html += `
-                            <span class="text-gray-500 px-2">...</span>
-                            <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded"
-                                    onclick="changePage(1)">
-                                Next ➡️
-                            </button>
-                        </div>`;
+                        <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+                                ${current === totalPages ? 'disabled' : ''}
+                                onclick="goToPage(${current + 1})">
+                            Next ➡️
+                        </button>`;
+
+                    html += `</div>`;
+
 
                     resultsContainer.innerHTML = html;
 
