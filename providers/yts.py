@@ -30,7 +30,7 @@ async def get_yts_torrents(query_term: str, page: int):
                     return [], 0
 
 
-                for movie in data.json()['data']['movies']:
+                for movie in data['data']['movies']:
                     for torrent in movie['torrents']:
                         result={
                             "title": f"{movie['slug']}-{torrent['quality']}-{torrent['type']}-{torrent['video_codec']}",
