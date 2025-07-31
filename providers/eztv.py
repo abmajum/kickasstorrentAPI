@@ -22,8 +22,8 @@ async def get_eztv_torrents(query_term: str, page: int):
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(query_url, headers=headers, data=payload) as response:
-
-            box = BeautifulSoup(response.text , "html.parser")
+            html_text = await response.text()
+            box = BeautifulSoup(html_text , "html.parser")
             tbles = box.find_all('table', class_='forum_header_border')
             results = []
             for tble in tbles:
