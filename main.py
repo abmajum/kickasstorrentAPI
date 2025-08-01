@@ -1,8 +1,11 @@
 import urllib.parse
+import requests
 from enum import Enum
-from fastapi import FastAPI, Query
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from providers.yts import get_yts_torrents
 from providers.apibay import get_piratebay_torrents
@@ -14,6 +17,11 @@ class Providers(str, Enum):
     yts = "yts"
     thepiratebay = "thepiratebay"
     eztv = "eztv"
+
+    @classmethod
+    def list_of_providers(cls):
+        return [provider.value for provider in cls]
+
 
 app = FastAPI(
     title="TorrentAPI",
@@ -39,8 +47,12 @@ app = FastAPI(
     license_info={
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
-    },
+    }
 )
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,22 +62,28 @@ app.add_middleware(
     allow_headers=["*"],          # Allow all headers
 )
 
-@app.get("/", include_in_schema=False)
-async def docs_redirect():
-    return RedirectResponse(url='/docs')
+
+@app.get("/", response_class=HTMLResponse,  include_in_schema=False)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "items": Providers.list_of_providers()})
+
+@app.get("/get-torrents/healthz")
+async def get_api_health_status():
+    return {"status": "Running"}
+
 
 @app.get("/get-torrents/{providers}")
-def fetch_torrents(providers: Providers, page: int = 1, query: str = Query(..., description="Search term")):
-  encoded_query = urllib.parse.quote(query)
-  if providers == providers.kickasstorrent:
-    results, total_pages = get_kickass_torrents(encoded_query, page)
-  elif providers == providers.yts:
-     results, total_pages = get_yts_torrents(encoded_query, page)
-  elif providers == providers.thepiratebay:
-     results, total_pages = get_piratebay_torrents(encoded_query, page)
-  elif providers == providers.eztv:
-     results, total_pages = get_eztv_torrents(encoded_query, page)
-  else:
-     return{"total_pages": None, "results": None, "message": "No correct provider is chosen"}
-  return {"total_pages": total_pages, "current_page": page, "results": results}
+async def fetch_torrents(providers: Providers, page: int = 1, query: str = Query(..., description="Search term")):
+    encoded_query = urllib.parse.quote(query)
+    if providers == providers.kickasstorrent:
+        results, total_pages = await get_kickass_torrents(encoded_query, page)
+    elif providers == providers.yts:
+        results, total_pages = await get_yts_torrents(encoded_query, page)
+    elif providers == providers.thepiratebay:
+        results, total_pages = await get_piratebay_torrents(encoded_query, page)
+    elif providers == providers.eztv:
+        results, total_pages = await get_eztv_torrents(encoded_query, page)
+    else:
+        return{"total_pages": None, "results": None, "message": "No correct provider is chosen"}
+    return {"total_pages": total_pages, "current_page": page, "results": results}
 

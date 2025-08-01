@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TorrentScraper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs" defer></script>
+</head>
+<body class="bg-black text-gray-100 font-sans min-h-screen">
+    <div class="max-w-4xl mx-auto p-6">
+        <h1 class="text-3xl font-bold mb-2 text-sky-500">⚒️ TorrentScraper</h1>
+        <p class="mb-6 text-gray-400">Search and discover torrents from multiple providers. Find what you're looking for quickly and easily.</p>
+
+        <form id="torrent-form" method="get" action="/get-torrents/provider" class="space-y-6"
+              x-data='{
+                  open: false,
+                  selected: "",
+                  providers: {{ items|tojson }}
+              }'>
+            
+            <!-- Provider Dropdown -->
+            <div class="relative">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Choose a provider:</label>
+                
+                <button type="button"
+                        @click="open = !open"
+                        class="w-full bg-zinc-900 border border-gray-700 rounded px-4 py-2 flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <template x-if="selected">
+                            <img :src="'/static/providers/' + selected.toLowerCase() + '.png'" class="w-5 h-5">
+                        </template>
+                        <span x-text="selected || 'Select a provider'" class="capitalize text-white"></span>
+                    </div>
+                    <svg class="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <ul x-show="open"
+                    @click.outside="open = false"
+                    class="absolute z-10 bg-zinc-900 border border-gray-700 mt-2 rounded w-full shadow max-h-60 overflow-y-auto"
+                    x-cloak>
+                    <template x-for="provider in providers" :key="provider">
+                        <li @click="selected = provider; open = false"
+                            class="flex items-center px-4 py-2 hover:bg-zinc-800 cursor-pointer space-x-3">
+                            <img :src="'/static/providers/' + provider.toLowerCase() + '.png'" class="w-5 h-5" alt="">
+                            <span x-text="provider" class="capitalize text-gray-100"></span>
+                        </li>
+                    </template>
+                </ul>
+
+                <input type="hidden" name="providers" :value="selected">
+            </div>
+
+            <!-- Query Input -->
+            <div>
+                <label for="query" class="block text-sm font-medium text-gray-300">Search query</label>
+                <input type="text" id="query" name="query" placeholder="e.g. Interstellar, Ubuntu ISO..." class="w-full mt-1 p-2 bg-zinc-900 text-white border border-gray-700 rounded" />
+            </div>
+
+            <!-- Submit Button -->
+            <div>
+                <input type="submit" value="🔍 Search Torrents" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded cursor-pointer" />
+            </div>
+        </form>
+
+        <!-- Results -->
+        <div id="results" class="mt-10"></div>
+
+        <script>
+            let currentPage = 1;
+
+            const form = document.getElementById('torrent-form');
+            const resultsContainer = document.getElementById('results');
+
+            async function fetchResults(provider, query, page) {
+                resultsContainer.innerHTML = "<p class='text-gray-400'>Loading...</p>";
+
+                try {
+                    const response = await fetch(`/get-torrents/${provider}?query=${encodeURIComponent(query)}&page=${page}`);
+                    const data = await response.json();
+
+                    if (!data.results || data.results.length === 0) {
+                        resultsContainer.innerHTML = "<p class='text-gray-400'>No results found.</p>";
+                        return;
+                    }
+
+                    let html = `
+                        <div class="overflow-x-auto rounded-md shadow-lg bg-zinc-900 mb-6">
+                            <table class="min-w-full table-auto text-left">
+                                <thead class="bg-zinc-800 text-sky-400">
+                                    <tr>
+                                        <th class="px-4 py-3">📕 Title</th>
+                                        <th class="px-4 py-3">🖴 Size</th>
+                                        <th class="px-4 py-3">👤 Uploader</th>
+                                        <th class="px-4 py-3">📅 Age</th>
+                                        <th class="px-4 py-3">🌱 Seeds</th>
+                                        <th class="px-4 py-3">🧲 Magnet</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-800 text-gray-300">`;
+
+                    data.results.forEach(item => {
+                        html += `
+                            <tr class="hover:bg-zinc-800 transition">
+                                <td class="px-4 py-2 max-w-xs break-words">${item.title}</td>
+                                <td class="px-4 py-2">${item.size}</td>
+                                <td class="px-4 py-2">${item.uploader}</td>
+                                <td class="px-4 py-2">${item.age}</td>
+                                <td class="px-4 py-2">${item.seeds}</td>
+                                <td class="px-4 py-2"><a href="${item.magnet}" target="_blank" class="text-sky-400 hover:underline">Link</a></td>
+                            </tr>`;
+                    });
+
+                    html += `</tbody></table></div>`;
+
+                    const totalPages = data.total_pages;
+                    const current = data.current_page;
+
+                    // Add pagination buttons
+                    html += `<div class="flex justify-center items-center flex-wrap gap-1 mt-6 text-sm">`;
+
+                    // Previous button
+                    html += `
+                        <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+                                ${current === 1 ? 'disabled' : ''}
+                                onclick="goToPage(${current - 1})">
+                            ⬅️ Previous
+                        </button>`;
+
+                    // Page numbers
+                    const maxVisiblePages = 10;
+                    let startPage = Math.max(1, current - Math.floor(maxVisiblePages / 2));
+                    let endPage = startPage + maxVisiblePages - 1;
+
+                    if (endPage > totalPages) {
+                        endPage = totalPages;
+                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                        html += `
+                            <button class="px-3 py-1 rounded ${i === current ? 'bg-sky-600 text-white font-bold' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'}"
+                                    onclick="goToPage(${i})">
+                                ${i}
+                            </button>`;
+                    }
+
+                    // Ellipsis if not on last page
+                    if (endPage < totalPages) {
+                        html += `<span class="text-gray-500 px-2">...</span>`;
+                    }
+
+                    // Next button
+                    html += `
+                        <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+                                ${current === totalPages ? 'disabled' : ''}
+                                onclick="goToPage(${current + 1})">
+                            Next ➡️
+                        </button>`;
+
+                    html += `</div>`;
+
+
+                    resultsContainer.innerHTML = html;
+
+                } catch (error) {
+                    resultsContainer.innerHTML = "<p class='text-red-500'>Error fetching data. Check console.</p>";
+                    console.error("Fetch error:", error);
+                }
+            }
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                currentPage = 1; // reset on new search
+                const provider = document.querySelector('[name="providers"]').value;
+                const query = document.getElementById('query').value;
+                fetchResults(provider, query, currentPage);
+            });
+
+            // Expose globally so the buttons can use it
+            window.goToPage = function (page) {
+                currentPage = page;
+                const provider = document.querySelector('[name="providers"]').value;
+                const query = document.getElementById('query').value;
+                fetchResults(provider, query, currentPage);
+            };
+        </script>
+
+    </div>
+</body>
+</html>
